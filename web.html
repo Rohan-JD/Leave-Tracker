@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button, select {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .person-card {
+      background: #fafafa;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    .leave-list {
+      list-style: none;
+      padding-left: 0;
+    }
+    .leave-list li {
+      display: flex;
+      justify-content: space-between;
+      background: #f0f0f0;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+    }
+    .remove-btn {
+      background: #e74c3c;
+      border: none;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Leave Tracker</h1>
+  <div class="container">
+    <h2>Add Person</h2>
+    <input type="text" id="personName" placeholder="Enter name">
+    <button onclick="addPerson()">Add Person</button>
+
+    <h2>Add Leave</h2>
+    <select id="personSelect"></select>
+    <input type="date" id="leaveDate">
+    <button onclick="addLeave()">Add Leave</button>
+
+    <h2>People and Leaves</h2>
+    <div id="peopleList"></div>
+  </div>
+
+  <script>
+    let people = JSON.parse(localStorage.getItem('people')) || [];
+
+    function saveData() {
+      localStorage.setItem('people', JSON.stringify(people));
+    }
+
+    function formatDate(dateString) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    }
+
+    function renderPeople() {
+      const list = document.getElementById('peopleList');
+      const select = document.getElementById('personSelect');
+      list.innerHTML = '';
+      select.innerHTML = '';
+
+      people.forEach((person, index) => {
+        // Update dropdown
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = person.name;
+        select.appendChild(option);
+
+        // Sort leaves chronologically
+        person.leaves.sort((a, b) => new Date(a) - new Date(b));
+
+        // Display person info
+        const div = document.createElement('div');
+        div.className = 'person-card';
+
+        let leavesHTML = '';
+        if (person.leaves.length > 0) {
+          leavesHTML = '<ul class="leave-list">';
+          person.leaves.forEach((date, leaveIndex) => {
+            leavesHTML += `
+              <li>
+                ${formatDate(date)}
+                <button class="remove-btn" onclick="removeLeave(${index}, ${leaveIndex})">❌</button>
+              </li>`;
+          });
+          leavesHTML += '</ul>';
+        } else {
+          leavesHTML = '<p>No leaves recorded.</p>';
+        }
+
+        div.innerHTML = `
+          <strong>${person.name}</strong><br>
+          Total Leaves: ${person.leaves.length}
+          ${leavesHTML}
+        `;
+
+        list.appendChild(div);
+      });
+    }
+
+    function addPerson() {
+      const name = document.getElementById('personName').value.trim();
+      if (!name) return alert('Please enter a name');
+      people.push({ name, leaves: [] });
+      document.getElementById('personName').value = '';
+      saveData();
+      renderPeople();
+    }
+
+    function addLeave() {
+      const personIndex = document.getElementById('personSelect').value;
+      const date = document.getElementById('leaveDate').value;
+      if (!date) return alert('Please select a date');
+
+      // Check for duplicate date
+      const person = people[personIndex];
+      if (person.leaves.includes(date)) {
+        alert(`There's already a leave marked on this day for ${person.name}!`);
+        return;
+      }
+
+      person.leaves.push(date);
+      document.getElementById('leaveDate').value = '';
+      saveData();
+      renderPeople();
+    }
+
+    function removeLeave(personIndex, leaveIndex) {
+      people[personIndex].leaves.splice(leaveIndex, 1);
+      saveData();
+      renderPeople();
+    }
+
+    // Load on page start
+    renderPeople();
+  </script>
+</body>
+</html>er98
